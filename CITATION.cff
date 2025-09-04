@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the article or thesis below."
+authors:
+  - family-names: "Moschen"
+    given-names: "Lucas"
+    orcid: "https://orcid.org/0009-0004-9864-621X"   # coloque seu ORCID se tiver
+title: "Optimization methods for the Household Assignment Problem"
+version: "1.0.0"
+date-released: 2025-09-04
+license: "GPL-3.0"
+
+references:
+  - type: article
+    title: "Computational Methods for the Household Assignment Problem"
+    authors:
+      - family-names: "Friedrich"
+        given-names: "Ulf"
+      - family-names: "Moschen"
+        given-names: "Lucas"
+      - family-names: "Münnich"
+        given-names: "Ralf"
+      - family-names: "Schmidt"
+        given-names: "Martin"
+    year: 2025
+    url: "https://optimization-online.org/2024/07/computational-methods-for-the-household-assignment-problem/"
+    notes: "Preprint."
+
+  - type: thesis
+    title: "Optimization Methods for Geo-Referencing Statistical Information in Spatial Microsimulation"
+    authors:
+      - family-names: "Moschen"
+        given-names: "Lucas"
+    year: 2025
+    notes: "Doctoral thesis, not yet publicly available."
+
