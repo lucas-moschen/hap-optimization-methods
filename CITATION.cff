@@ -3,7 +3,7 @@ message: "If you use this work, please cite the article or thesis below."
 authors:
   - family-names: "Moschen"
     given-names: "Lucas"
-    orcid: "https://orcid.org/0009-0004-9864-621X"   # coloque seu ORCID se tiver
+    orcid: "https://orcid.org/0009-0004-9864-621X"   
 title: "Optimization methods for the Household Assignment Problem"
 version: "1.0.0"
 date-released: 2025-09-04
