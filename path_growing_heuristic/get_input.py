@@ -1,0 +1,289 @@
+# -*- coding: utf-8 -*-
+"""
+@author: Lucas Moschen
+
+This script contains functions to prepare the input data to pass onto the solving process.
+The main function is get_input, which is the function called by the module path_growing_heuristic.py.
+
+    Parameters
+    ----------
+    data_words : list
+        List of sub-strings used to find the data set files.
+    ignore_data_words : list, optional
+        The data sets containing any of these sub-strings will be ignored.
+        The default is None.
+    sub_dir : str, optional
+        Optional sub-directory where the data is located. 
+        The default is "data/datasets".
+    specific_coefficient_for_B_k_per : dict, optional
+        Each key of this dictionary must be the ID of a grid cell associated to some of Constraints (5.2e) of the formulation
+        presented in the thesis, and its respective value must be the proportion of the total dwelling capacity of this grid cell 
+        that corresponds to the value B_{k}^{per}. As an example, if the value corresponding to a grid cell ID is 0.5, it means that 
+        the upper bound for the amount of people that can be allocated into this grid cell is equal to 50% of its total dwelling 
+        capacity, i.e., 50% of the sum of capacities of the dwellings located in this grid cell. 
+        The default is None.
+    specific_coefficient_for_B_k_hhd : dict, optional
+        Each key of this dictionary must be the ID of a grid cell associated to some of Constraints (5.2d) of the formulation
+        presented in the thesis, and each respective value must be the proportion of the number of residential dwellings of this 
+        grid cell that corresponds to the value B_{k}^{hhd}. As an example, if the value corresponding to a grid cell ID is 0.5, it 
+        means that the upper bound for the amount of households that can be allocated into this grid cell is equal to 50% of the 
+        number of dwellings with non-null capacity located in this grid cell.
+        The default is None.
+
+    Returns
+    -------
+    household_df : DataFrame
+        Household dataframe processed by this script.
+    dwelling_df : DataFrame
+        Dwelling dataframe processed by this script.
+    B_k : dict
+        Dictionary containing two keys: "hhd" and "per". The value associated to "hhd" is a dictionary where the keys are 
+        indices of grid cells associated to the Constraints (5.2d) and the values are their respective B_{k}^{hhd} values.
+        Analogously, the value associated to "per" is a dictionary where the keys are indices of grid cells associated to 
+        the Constraints (5.2e) and the values are their espective B_{k}^{per} values.
+    save_comment : str
+        String containing information about the name of the municipality or district considered and about the grid cell 
+        constraints.
+    len_H : int
+        Amount of households in the original data set.
+    len_D : int
+        Amount of dwellings in the original data set.
+    idx_to_ids : dict
+        Dictionary containing information about all the indexations made in this script.
+"""
+
+from common.get_files import get_path_to_folder, get_file_path
+import os
+import json
+import pandas as pd
+import numpy as np
+import math 
+import copy 
+
+def create_indices(dataset: pd.DataFrame,
+                   column_name: str,
+                   elements_be_unique: bool = False):
+    
+    """
+    This function creates indices for the elements contained on a specific column of a dataset.
+    It returns the list of indices, a dictionary showing the indexing and a dictionary showing 
+    the inverse indexing. 
+    """
+
+    if elements_be_unique == True:
+        elements_list = list(dataset[column_name].unique())
+        indices_list = list(range(len(elements_list)))
+        indexing = dict(zip(indices_list, elements_list))
+        inverse_indexing = {v: k for k, v in indexing.items()}
+    else:
+        elements_list = list(dataset[column_name])
+        indices_list = list(range(len(elements_list)))
+        indexing = dict(zip(indices_list, elements_list))
+        inverse_indexing = {v: k for k, v in indexing.items()}
+
+    return indices_list, indexing, inverse_indexing
+
+def create_s_dict(dataset: pd.DataFrame,
+                  grid_cells_column_name: str, 
+                  id_column_name: str,
+                  inverse_indexing_of_dwellings: dict,
+                  inverse_indexing_of_grid_cells: dict):
+    """
+    This function creates binary encoding s_{d,k} that indicates if dwelling d is in grid cell k as a dictionary where each key 
+    is a grid cell index and the corresponding value is a list of indices of the dwellings contained in this grid cell.
+    """
+
+    # Creates the s dict with the grid cell IDs being the keys  
+    s_df = dataset[[grid_cells_column_name, id_column_name]].groupby(
+        grid_cells_column_name).agg(
+        lambda x: x.unique().tolist())
+    s_df = s_df.to_dict()
+    s_dict = s_df[id_column_name]
+
+    # Changes the keys to the grid cell indices and the values to dwelling indices 
+    s = {}
+    for key, temp in s_dict.items():
+        new_temp = []
+        for dwe in temp:
+            new_temp.append(inverse_indexing_of_dwellings[dwe])
+
+        s[inverse_indexing_of_grid_cells[key]] = copy.deepcopy(new_temp)
+
+    return s
+
+def create_save_B_k_dicts(df: pd.DataFrame,
+                          s: dict,
+                        inverse_indexing_of_grid_cells: dict,
+                        name_of_file: str,  
+                        specific_coefficient_for_B_k_per: dict = None,
+                        specific_coefficient_for_B_k_hhd: dict = None):
+    
+    """
+    This function creates the grid cell constraints as dictionaries {index of grid cell: upper bound on amount of households} and
+    {index of grid cell: upper bound on amount of people}. It also creates the string save_comment that contains information about 
+    the corresponding numerical experiment.
+    """
+
+    B_hhd = {}
+    B_per = {}
+
+    if specific_coefficient_for_B_k_hhd is not None:
+        for id_cell in specific_coefficient_for_B_k_hhd.keys():
+            B_hhd[id_cell] = int(math.ceil(specific_coefficient_for_B_k_hhd[id_cell] * len(s[inverse_indexing_of_grid_cells[id_cell]])))
+    
+    if specific_coefficient_for_B_k_per is not None:
+        for id_cell in specific_coefficient_for_B_k_per.keys():
+            B_per[id_cell] = 0
+            for d in s[inverse_indexing_of_grid_cells[id_cell]]:
+                B_per[id_cell] += df.at[d, "capacity"] 
+            B_per[id_cell] = int(math.ceil(specific_coefficient_for_B_k_per[id_cell] * B_per[id_cell]))
+
+    # Takes the name of the municipality or district       
+    save_comment = name_of_file.split("_")[-1].split(".")[0] 
+
+    # Add in save_comment information about existence of hhd grid cell constraints
+    save_comment = save_comment + "_" + str(len(B_hhd)) + "_hhd_cell_constrs"
+    if specific_coefficient_for_B_k_hhd is not None:
+        save_comment = save_comment + "_proportion_" + str(next(iter(specific_coefficient_for_B_k_hhd.values())))
+
+    # Add in save_comment information about existence of per grid cell constraints
+    save_comment = save_comment + "_" + str(len(B_per)) + "_per_cell_constrs"
+    if specific_coefficient_for_B_k_per is not None:
+        save_comment = save_comment + "_proportion_" + str(next(iter(specific_coefficient_for_B_k_per.values())))
+
+    # Creates path to save B_per dictionary
+    save_path = get_path_to_folder("data/B_per_files")
+    save_path = os.path.join(save_path, "B_per_" + save_comment + ".json")
+
+    # Saves B_per dictionary
+    with open(save_path, "w") as B_per_file:
+        json.dump(B_per, B_per_file, default=convert)
+    
+    # Creates path to save B_hhd dictionary
+    save_path = get_path_to_folder("data/B_hhd_files")
+
+    # Saves B_hhd dictionary
+    save_path = os.path.join(save_path, "B_hhd_" + save_comment + ".json")
+    with open(save_path, "w") as B_hhd_file:
+        json.dump(B_hhd, B_hhd_file, default=convert)
+
+    # Updates B_hhd dict to have indices instead of IDs in the keys
+    list_keys_B_hhd = list(B_hhd.keys())
+    for label in list_keys_B_hhd:
+        B_hhd[inverse_indexing_of_grid_cells[label]] = B_hhd[label] 
+        del B_hhd[label] 
+
+    # Updates B_per dict to have indices instead of IDs in the keys
+    list_keys_B_per = list(B_per.keys())
+    for label in list_keys_B_per:
+        B_per[inverse_indexing_of_grid_cells[label]] = B_per[label] 
+        del B_per[label] 
+
+    # Creates B_k dict
+    B_k = {}
+    B_k["hhd"] = B_hhd
+    B_k["per"] = B_per
+
+    return B_k, save_comment
+
+def create_grid_cell_index_column(df: pd.DataFrame, inverse_indexing_of_grid_cells: dict):
+
+    """This function creates a grid cell index column for the dataframe df."""
+
+    df["grid_cell"] = None 
+    for d in df.index:
+        df.at[d, "grid_cell"] = inverse_indexing_of_grid_cells[df.at[d, "Gitter_ID_100m"]]
+
+    return df 
+
+def convert(a):
+
+    """ convert to Int64 """
+
+    if isinstance(a, np.int64):
+        return int(a)
+    raise TypeError
+
+def get_input(data_words: list, 
+              ignore_data_words: list = None,
+              sub_dir: str = "data/datasets",
+              specific_coefficient_for_B_k_per: dict = None,
+              specific_coefficient_for_B_k_hhd: dict = None):
+    
+    """ This function takes the datasets and prepares all the data to be inserted in the solving process. """
+
+    # Initializes a dictionary that will store paths to the data sets
+    data_paths_dict = {}
+    
+    path_to_files = get_file_path(sub_dir,
+                                    file_words=data_words,
+                                    ignore_file_words=ignore_data_words,
+                                    num_files=2)
+
+    # Store paths to household and dwelling data sets
+    for path in path_to_files:
+        
+        name_of_file = path.split("/")[-1].split(".")[0].lower()
+        
+        type_of_file = ["h" if "hold" in name_of_file
+                        else "d" if "house" in name_of_file else None][0]
+        if type_of_file:
+            data_paths_dict[type_of_file] = path
+
+    # Initialize dictionary idx_to_ids. It will store a match between index (idx) and ID for the dwellings, households and 
+    # grid cells. Both a forward (idx : id) and a backward (id : idx) match is saved
+    idx_to_ids = {}
+
+    # Get dwelling data
+    dwelling_df = pd.read_csv(data_paths_dict["d"])
+    dwelling_df = dwelling_df.reset_index(drop=True)
+
+    # Get amount of dwellings in the original data set
+    len_D = len(dwelling_df)
+
+    # Indexing the dwellings
+    _, idx_to_ids["D"], idx_to_ids["D_inv"] = create_indices(dataset = dwelling_df, column_name = "ID")
+
+    # Indexing the grid cells
+    K, idx_to_ids["K"], idx_to_ids["K_inv"] = create_indices(dataset = dwelling_df,
+                                                             column_name = "Gitter_ID_100m",
+                                                             elements_be_unique = True) 
+    
+    # Creates new grid cell index column in the dwellings dataframe
+    dwelling_df = create_grid_cell_index_column(df = dwelling_df, inverse_indexing_of_grid_cells = idx_to_ids["K_inv"])
+
+    # Remove dwellings with null capacity
+    dwelling_df.drop(dwelling_df.loc[dwelling_df["capacity"]==0].index, inplace = True)
+
+    # Creates the binary encoding s_{d,k} as a dict
+    s = create_s_dict(dataset = dwelling_df, 
+                      grid_cells_column_name = "Gitter_ID_100m", 
+                      id_column_name = "ID", 
+                      inverse_indexing_of_dwellings = idx_to_ids["D_inv"], 
+                      inverse_indexing_of_grid_cells = idx_to_ids["K_inv"])
+
+    # Creates the dictionary containing the B_k values and a string carrying imporant information about the experiment
+    B_k, save_comment = create_save_B_k_dicts(df = dwelling_df,
+                                              s = s,
+                                                inverse_indexing_of_grid_cells = idx_to_ids["K_inv"], 
+                                                specific_coefficient_for_B_k_per = specific_coefficient_for_B_k_per,
+                                                specific_coefficient_for_B_k_hhd = specific_coefficient_for_B_k_hhd,
+                                                name_of_file = name_of_file)
+    
+    # Give name to the dwelling dataframe index column
+    dwelling_df.index.name = "D"
+
+    # Get household data
+    household_df = pd.read_csv(data_paths_dict["h"])
+    household_df = household_df.astype({"size": int})
+
+    # Get amount of households in the original data set
+    len_H = len(household_df)
+
+    # Creates indices for households
+    _, idx_to_ids["H"], idx_to_ids["H_inv"] = create_indices(dataset = household_df, column_name = "ID")
+
+    # Give name to the household dataframe index column
+    household_df.index.name = "H" 
+
+    return household_df, dwelling_df, B_k, save_comment, len_H, len_D, idx_to_ids
