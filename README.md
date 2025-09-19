@@ -86,7 +86,7 @@ python3 hap_solving.py "['(9700hhd)']" "w_2_city10000(9700hhd)seed=10[0.4, 0.4, 
 ```
 run the path-growing heuristic. These three methods have no parameters.
 
-The regional decomposition with the default parameters obtained in Section 8.3 the thesis can be run with
+The regional decomposition with the default parameters obtained in Section 8.3 of the thesis can be run with
 ```bash
 python3 hap_solving.py "['(9700hhd)']" "w_2_city10000(9700hhd)seed=10[0.4, 0.4, 0.2].csv" 46 0.95 0.95 reg_decomp 5000 0.97 0.05 0.3 100
 ```
