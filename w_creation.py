@@ -386,10 +386,18 @@ if __name__ == "__main__":
     import ast 
 
     print(sys.argv)
-    # Transform lists in string form into lists
+    # Transform list in string form into list
     data_words = ast.literal_eval(sys.argv[2])
-    tau = ast.literal_eval(sys.argv[3])
 
-    w(w_type = sys.argv[1],
-      data_words = data_words,
-      tau = tau)
+    if sys.argv[1] != "w_2":
+
+        w(w_type = sys.argv[1],
+          data_words = data_words)
+    else:
+        # Argument tau is necessary
+        # Transform list in string form into list
+        tau = ast.literal_eval(sys.argv[3])
+
+        w(w_type = sys.argv[1],
+          data_words = data_words,
+          tau = tau)
