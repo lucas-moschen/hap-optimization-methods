@@ -3,7 +3,6 @@
 This repository contains implementations of the optimization methods developed and applied in the context of my doctoral research.
 The methods are organized in separate folders, and the script `hap_solving.py` is provided at the root level to run selected methods.
 
----
 
 ## Installation
 
@@ -18,7 +17,6 @@ cd hap-optimization-methods
 pip install -r requirements.txt
 ```
 
----
 
 ## Usage
 
@@ -95,7 +93,6 @@ python3 hap_solving.py "['(9700hhd)']" "w_2_city10000(9700hhd)seed=10[0.4, 0.4, 
 ```
 The LRBAM-IWPP can be executed simply by replacing the argument `lrbam_spp` with `lrbam_iwpp` in the previous command.
 
----
 
 ## Repository Structure
 ```bash
@@ -117,18 +114,15 @@ hap-optimization-methods/
 └── README.md			# This file
 ```
 
----
 
 ## Citation
 If you use this code, please cite the related article and thesis:
 See `CITATION.cff` file.
 
----
 
 ## License
 This repository is licensed under the GPL-3.0 License.
 
----
 
 ## Author
 Lucas Moschen
@@ -136,7 +130,6 @@ Doctoral Researcher, University of Trier
 
 See the `AUTHORS` file for a complete list of contributors.
 
----
 
 ## Acknowledgments
 
