@@ -31,10 +31,10 @@ This script is ready to create 3 different types of W matrix:
         The default is "".
         If the default is selected, the directory chosen will be the sub-directory "data/w_matrices".
     p: list, optional
-        The expotents of the formula to compute the weights for the w_3 matrix.
+        The expotents of the formula to compute the weights for the w_2 matrix.
         The default is [2,1,1].
     tau: list, optional
-        The "importance coefficients" for the weight formula of the w_3 matrix.
+        The "importance coefficients" for the weight formula of the w_2 matrix.
         The default is [0.4, 0.4, 0.2]. 
 
     Returns 
@@ -401,3 +401,4 @@ if __name__ == "__main__":
         w(w_type = sys.argv[1],
           data_words = data_words,
           tau = tau)
+
