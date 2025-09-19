@@ -134,6 +134,7 @@ This repository is licensed under the GPL-3.0 License.
 
 ## Author
 Lucas Moschen
+
 Doctoral Researcher, University of Trier
 
 See the `AUTHORS` file for a complete list of contributors.
