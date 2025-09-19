@@ -20,11 +20,15 @@ pip install -r requirements.txt
 
 ## Usage
 
-First, create the assignment weight matrix according to Section 5.3 of the thesis by running
+### Generating the assignment weight matrix
+
+First, generate the assignment weight matrix according to Section 5.3 of the thesis by running
 
 ```bash
 python3 w_creation.py w_type "data_words" tau
 ```
+
+at the root level.
 
 ### Arguments:
 
@@ -41,11 +45,15 @@ It is necessary only if `w_type == "w_2"`.
 python3 w_creation.py w_2 "['(9700hhd)']" [0.4,0.4,0.2]
 ```
 
+### Running the solution methods
+
 After constructing the matrix, run the solution methods with
 
 ```bash
 python3 hap_solving.py "data_words" w_name n vartheta_hhd vartheta_per method params
 ```
+
+at the root level.
 
 ### Arguments:
 
@@ -63,7 +71,7 @@ python3 hap_solving.py "data_words" w_name n vartheta_hhd vartheta_per method pa
 
 `params` Parameter values of the corresponding solution method. This can be empty (no parameters), a single value, or multiple values depending on the selected method.
 
-### Example:
+### Examples:
 
 ```bash
 python3 hap_solving.py "['(9700hhd)']" "w_2_city10000(9700hhd)seed=10[0.4, 0.4, 0.2].csv" 46 0.95 0.95 exact
